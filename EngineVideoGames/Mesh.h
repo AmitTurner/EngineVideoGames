@@ -87,6 +87,9 @@ class BoundingBox
 	//TODO: Add constructor and checkCollision function
 };
 
+
+IndexedModel PlaneTriangles();
+
 IndexedModel CubeTriangles();
 
 IndexedModel AxisGenerator();

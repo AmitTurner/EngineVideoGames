@@ -42,14 +42,13 @@
 						scn->Deactivate();
 					else
 						scn->Activate();
-				break;
+					break;
 				case GLFW_KEY_A:
 					scn->change_movement(-0.001f);
 					break;
 				case GLFW_KEY_S:
 					scn->change_movement(0.001f);
 					break;
-
 				case GLFW_KEY_D:
 					scn->SetDirection();
 					break;
@@ -109,7 +108,7 @@
 		Game *scn = (Game*)glfwGetWindowUserPointer(window);
 
 		scn->resize(width,height);
-		//relation = (float)width/(float)height;
+		
 	}
 
 	void init(Display &display)

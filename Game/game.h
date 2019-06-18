@@ -14,7 +14,7 @@ class Game : public Scene
 public:
 	bool cameramode = false;
 	Game(void);
-	Game(glm::vec3 position,float angle,float hwRelation,float near, float far);
+	Game(glm::vec3 position,float angle,float near, float far,Viewport &vp);
 	void Init();
 	void addShape(int type,int parent,unsigned int mode);
 	void addShape(IndexedModel model, int parent, unsigned int mode);

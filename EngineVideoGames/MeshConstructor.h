@@ -32,6 +32,7 @@ public:
 	enum SimpleShapes
 	{
 		Axis,
+		Plane,
 		Cube,
 		Octahedron,
 		Tethrahedron,

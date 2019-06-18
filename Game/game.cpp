@@ -20,7 +20,7 @@ static void printMat(const glm::mat4 mat)
 
 Game::Game():Scene(){curve = 0;}
 
-Game::Game(glm::vec3 position,float angle,float hwRelation,float near, float far) : Scene(position,angle,hwRelation,near,far)
+Game::Game(glm::vec3 position,float angle,float near, float far,Viewport &vp) : Scene(position,angle,near,far,vp)
 { 
 	curve = new Bezier1D();	
 }
@@ -142,15 +142,19 @@ void Game::Init()
 	}
 	std::cout << "done snake" << std::endl;
 
+	plane2D = new Shape(Plane,TRIANGLES);
+	plane2D->SetShader(2);
+	
+	addShape(Axis,-1,LINES);
+	shapes[0]->Hide();
+	addShapeFromFile("../res/objs/monkey3.obj",-1,TRIANGLES);
+	
+	addShape(Cube,-1,TRIANGLES);
+
 	// translate all scene away from camera
 	myTranslate(glm::vec3(0, 0, -20), 0);
 
 	pickedShape = 0;
-
-	shapeTransformation(yScale, 10);
-	shapeTransformation(xScale, 10);
-	shapeTransformation(zScale, 10);
-
 
 	ReadPixel();
 	pickedShape = -1;
@@ -164,7 +168,7 @@ void finUpdate(Shader *s, const int  shaderIndx, const int pickedShape) {
 	if (shaderIndx == 0)
 		s->SetUniform4f("lightColor", r / 255.0f, g / 255.0f, b / 255.0f, 1.0f);
 	else
-		s->SetUniform4f("lightColor", 0.1f, 0.8f, 0.7f, 1.0f);
+		s->SetUniform4f("lightColor", 0.7f, 0.8f, 0.1f, 1.0f);
 	s->Unbind();
 }
 

@@ -10,16 +10,17 @@ class Display
 public:
 	Display(int width, int height, const std::string& title);
 
-	void Clear(float r, float g, float b, float a);
 	void SwapBuffers();
 	void PollEvents();
-	bool IsFullscreen(  );
+	
+	void setScene(void *userPointer);
 	void* getScene();
 	void addKeyCallBack(void(*func)(GLFWwindow *,int,int,int,int));
 	void addMouseCallBacks(void (* mousebuttonfun)(GLFWwindow*,int,int,int),void(* scrollfun)(GLFWwindow*,double,double),void (* cursorposfun)(GLFWwindow*,double,double));
 	void addResizeCallBack(void (*windowsizefun)(GLFWwindow*,int,int));
 	
-	void setScene(void *userPointer);
+	bool IsFullscreen(  );
+	
 
 	void mouseProccessing(int button);
 	static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -28,7 +29,7 @@ public:
 	//void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 	//static void window_size_callback(GLFWwindow* window, int width, int height);
 
-	int closeWindow();
+	bool closeWindow();
 	 ~Display();
 //protected:
 private:

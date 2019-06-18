@@ -24,23 +24,15 @@ Display::Display(int width, int height, const std::string& title)
     }
 	isFullScreen = false;
 	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_SMOOTH);
-	//glEnable(GL_CULL_FACE);
-	//glCullFace(GL_FRONT_AND_BACK);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	//glReadBuffer(GL_BACK);
+
 }
 
 void Display::addKeyCallBack(void(*keyCallback)(GLFWwindow *,int,int,int,int))
 {
 	glfwSetKeyCallback(m_window,(void(*)(GLFWwindow *,int,int,int,int))keyCallback);//{
-	
-	//glfwSetKeyCallback(m_window,[](GLFWwindow *window,int key,int scancode,int action,int mods){
-	//	func(glfwGetWindowUserPointer(window),key,scancode,action,mods);
-	//});
-		//key_callback);
-	
-	
-
-	//glEnable(GL_CULL_FACE);
 
 }
 
@@ -67,22 +59,15 @@ void* Display::getScene()
 	return glfwGetWindowUserPointer(m_window);
 }
 
-int Display::closeWindow()
+bool Display::closeWindow()
 {
-	return glfwWindowShouldClose(m_window);
-}
-Display::~Display()
-{
-	//SDL_GL_DeleteContext(m_glContext);
-	glfwDestroyWindow(m_window);
-	glfwTerminate();
-	//SDL_Quit();
+	return glfwWindowShouldClose(m_window) !=0;
 }
 
-void Display::Clear(float r, float g, float b, float a)
+Display::~Display()
 {
-	glClearColor(r, g, b, a);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glfwDestroyWindow(m_window);
+	glfwTerminate();
 }
 
 bool Display::IsFullscreen( void )

@@ -26,8 +26,7 @@ using namespace glm;
 		//
 		//indicesSize = sizeof(indices)/sizeof(indices[0]) ; 
 		glLineWidth(3);
-		
-		cameras.push_back(new Camera(vec3(0,0,1.0f),60.0f,1.0f,0.1f,100.0f));
+		cameras.push_back(new Camera(vec3(0,0,1.0f),vec3(0,0,-1.0f),60.0f,0.1f,100.0f,Viewport()));		
 		pickedShape = -1;
 		depth = 0;
 		cameraIndx = 0;
@@ -36,20 +35,20 @@ using namespace glm;
 		isActive = false;
 	}
 
-	Scene::Scene(vec3 position,float angle,float hwRelation,float near, float far)
+	Scene::Scene(vec3 position,float angle,float near, float far,Viewport &vp)
 	{
 		//verticesSize = sizeof(vertices)/sizeof(vertices[0]);
 		//
 		//indicesSize = sizeof(indices)/sizeof(indices[0]) ; 
 		glLineWidth(6);
-		cameras.push_back(new Camera(position,angle,hwRelation,near,far));
-	//	axisMesh = new Shape(axisVertices,sizeof(axisVertices)/sizeof(axisVertices[0]),axisIndices, sizeof(axisIndices)/sizeof(axisIndices[0]));
+		cameras.push_back(new Camera(position,-position,angle,near,far,vp));
 		pickedShape = -1;
 		depth = 0;
 		cameraIndx = 0;
 		xold = 0;
 		yold = 0;
 		isActive = false;
+		
 	}
 
 	void Scene::addShapeFromFile(const std::string& fileName,int parent,unsigned int mode)
@@ -75,9 +74,35 @@ using namespace glm;
 		shaders.push_back(new Shader(fileName));		
 	}
 
-	void Scene::AddTexture(const std::string& textureFileName)
+	void Scene::AddTexture(const std::string& textureFileName,bool for2D)
 	{
+		if(for2D)
+		{
+			texIndices.push_back(textures.size());
+			plane2D->SetTexture(textures.size());
+		}
 		textures.push_back(new Texture(textureFileName));
+	}
+
+	void Scene::AddTexture(int width,int height,int mode)
+	{
+		texIndices.push_back(textures.size());
+		plane2D->SetTexture(textures.size());
+		textures.push_back(new Texture(width,height,mode));
+	}
+
+	void Scene::AddCamera(const glm::vec3& pos , float fov, float zNear, float zFar,Viewport vp)
+	{
+		cameras.push_back(new Camera(pos,-pos,fov,zNear,zFar,vp));
+	}
+
+	void Scene::AddBuffer(int texIndx,int cameraIndx,int mode)
+	{
+		buffers.push_back(new DrawBuffer(cameras[cameraIndx]->GetWidth(),cameras[cameraIndx]->GetHeight()));
+		buffers.back()->Bind();
+		textures[texIndx]->bindTex2Buffer(0,mode);
+		textures[texIndx+1]->bindTex2Buffer(0,DEPTH);
+		buffers.back()->UnBind();
 	}
 
 	mat4 Scene::GetViewProjection(int indx) const
@@ -114,64 +139,101 @@ using namespace glm;
 
 	}
 
-	//assumption ! chained shapes are uploaded together
-	void Scene::Draw(int shaderIndx,int cameraIndx,bool debugMode)
+	void Scene::Draw(int shaderIndx, int cameraIndx, int buffer, bool toClear, bool debugMode)
 	{
-		glm::mat4 Normal = makeTrans();
-		glm::mat4 MVP = cameras[0]->GetViewProjection() * Normal;
+		glEnable(GL_CULL_FACE);
+		buffers.back()->SetDrawDistination(buffers.size() - 1, buffer);
 
+		glm::mat4 Normal = makeTrans();
+		if (buffer == BACK)
+			glViewport(cameras[cameraIndx]->GetLeft(), cameras[cameraIndx]->GetBottom(), cameras[cameraIndx]->GetWidth(), cameras[cameraIndx]->GetHeight());
+		else
+			glViewport(0, 0, cameras[cameraIndx]->GetWidth(), cameras[cameraIndx]->GetHeight());
+
+		glm::mat4 MVP = cameras[cameraIndx]->GetViewProjection() * Normal;
 		int p = pickedShape;
-		mat4 Normal1, MVP1;
-		std::vector<glm::mat4> mvp, norms;
-		std::vector<glm::mat2x4> quaternions;
-		for (unsigned int i = 0; i<shapes.size(); i++){
-			getNormalAndMVP(Normal, MVP, &Normal1, &MVP1, i);
-			mvp.push_back(MVP1);
-			norms.push_back(Normal1);
-			detail::tdualquat<float, glm::highp> dquat = dualquat_cast(cropto3x4(glm::transpose(mvp[i])));
-			mat2x4 dquatmat(0);
-			dquatmat[0] = glm::vec4(dquat.real.x, dquat.real.y, dquat.real.z, dquat.real.w);
-			dquatmat[1] = glm::vec4(dquat.dual.x, dquat.dual.y, dquat.dual.z, dquat.dual.w);
-			quaternions.push_back(dquatmat);
+		if (toClear)
+		{
+			if (shaderIndx>0)
+				Clear(1, 1, 1, 1);
+			else
+				Clear(0, 0, 0, 0);
 		}
 
-		glm::mat4 lastMVP(0), nextMVP(0);
-
-		for (unsigned int i=0; i<shapes.size();i++)
+		for (unsigned int i = 0; i<shapes.size(); i++)
 		{
-			if(shapes[i]->Is2Render())
+			if (shapes[i]->Is2Render())
 			{
+				mat4 Normal1 = mat4(1);
+				pickedShape = i;
+				for (int j = i; chainParents[j] > -1; j = chainParents[j])
+				{
+					Normal1 = shapes[chainParents[j]]->makeTrans() * Normal1;
+				}
+
+				mat4 MVP1 = MVP * Normal1;
+				Normal1 = Normal * Normal1;
+
+				MVP1 = MVP1 * shapes[i]->makeTransScale(mat4(1));
+				Normal1 = Normal1 * shapes[i]->makeTrans();
+
 				if (shaderIndx > 0)
 				{
-					//ACTUALLY we want it just in a dual quaternion shader
-					//printf("%d %d\n", chainParents[i], i);
-					if (i<shapes.size()-1 && chainParents[i + 1] == i)
-						lastMVP = mvp[i + 1];
-					else
-						lastMVP = mat4(0);
-					if (chainParents[i] > -1)
-						nextMVP = mvp[chainParents[i]];
-					else
-						nextMVP = mat4(0);
-					pickedShape = i;
+					Update(MVP1, Normal1, shapes[i]->GetShader());
+					shapes[i]->Draw(shaders, textures, false);
 
-					UpdateLinear(lastMVP, mvp[i], nextMVP, norms[i], shapes[i]->GetShader());//linear
-					//UpdateQuaternion(lastMVP, quaternions[i], nextMVP, norms[i],shapes[i]->GetShader());//dquat
-					shapes[i]->Draw(shaders,textures,false);					
 				}
-				else 
-				{
-					pickedShape = i;
-					Update(mvp[i], norms[i],0);
-					shapes[i]->Draw(shaders,textures,true);
-					
+				else
+				{ //picking
+					Update(MVP1, Normal1, 0);
+					shapes[i]->Draw(shaders, textures, true);
 				}
 			}
 		}
 		pickedShape = p;
 	}
 
-	 void Scene::shapeRotation(vec3 v, float ang,int indx)
+	void Scene::Draw2D(int shaderIndx,int cameraIndx,int buffer,bool toClear,bool debugMode)
+	{
+		glDisable(GL_CULL_FACE);
+		buffers.back()->SetDrawDistination(buffers.size()-1,buffer);
+		glm::mat4 Normal = glm::mat4(1);
+		
+		glViewport(cameras[cameraIndx]->GetLeft(),cameras[cameraIndx]->GetBottom(),cameras[cameraIndx]->GetWidth(),cameras[cameraIndx]->GetHeight());
+		
+		if(toClear)
+		{
+			if(shaderIndx>0)
+				Clear(1,1,1,1);
+			else
+				Clear(0,0,0,0);
+		}
+		if(isActive)
+			Update2D(Normal,1,shaderIndx);
+		else
+			Update2D(Normal,0,shaderIndx);
+		plane2D->Draw(shaders,textures,false);
+		
+	}
+
+	void Scene::Update2D(glm::mat4& mat, int time, const int shaderIndx)
+	{
+		Shader *s = shaders[shaderIndx];
+		s->Bind();
+		s->SetUniformMat4f("MVP",glm::mat4(1));
+		//s->SetUniformMat4f("Normal",mat);
+		s->SetUniform1i("time", time);
+		
+		for(unsigned i = 0; i<texIndices.size();i++)
+		{
+			char str[9];
+			sprintf_s<9>(str,"sampler%d",i+1);
+			s->SetUniform1i(str,textures[texIndices[i]]->GetSlot()); //to fix to slot
+		}
+
+	}
+
+	void Scene::shapeRotation(vec3 v, float ang,int indx)
 		{
 			if(v.x >0.9999)
 				shapes[indx]->globalSystemRot(ang,v,xAxis1);
@@ -411,17 +473,31 @@ using namespace glm;
 	
 	void Scene::resize(int width,int height)
 	{
-		glViewport(0,0,width,height);
-		cameras[0]->setProjection((float)width/(float)height,cameras[cameraIndx]->GetNear(),cameras[cameraIndx]->GetFar());
+		//glViewport(cameras[0]->GetLeft(),cameras[0]->GetBottom(),width,height);
+		
+		cameras[0]->setProjection(cameras[cameraIndx]->GetNear(),cameras[cameraIndx]->GetFar(),Viewport(cameras[0]->GetLeft(),cameras[0]->GetBottom(),width,height));
+		if(buffers.size()>0)
+		{
+			buffers[0]->resize(width,height);
+			for(Texture* tex: textures)
+			{
+				if(tex->IsReadFromBuffer())
+				{
+					delete tex;
+					tex = new Texture(width,height,COLOR);
+					buffers[0]->Bind();
+					tex->bindTex2Buffer(0,COLOR);
+					buffers[0]->UnBind();
+				}
+			}
+		}
 	}
 
 	float Scene::picking(int x,int y)
 	{
-		//float depth;
-		glClearColor(0.0,0.0,0.0,0.0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		Draw(0,0,false); 
-						
+		
+		Draw(0,0,BACK,true,false); 
+		
 		GLint viewport[4];  
 		unsigned char data[4];
 		glGetIntegerv(GL_VIEWPORT, viewport); //reading viewport parameters
@@ -491,12 +567,12 @@ using namespace glm;
 		{
 			if(button == 1 )
 			{				
-				GLint viewport[4];
+				//GLint viewport[4];
 				//float zTmp = 2.0*depth -1.0;
-				glGetIntegerv(GL_VIEWPORT, viewport);
-				float z = float(cameras[cameraIndx]->GetFar()+depth*(cameras[cameraIndx]->GetNear()-cameras[cameraIndx]->GetFar()));
-				float transX = float(cameras[cameraIndx]->GetWHRelation()*(xrel)/(float) (viewport[2])*cameras[cameraIndx]->GetNear()*2.0*tan(cameras[cameraIndx]->GetAngle()*M_PI/360.0)*(cameras[cameraIndx]->GetFar()/z));
-				float transY = float((yrel)/(float) (viewport[3])*cameras[cameraIndx]->GetNear()*2.0*tan(cameras[cameraIndx]->GetAngle()*M_PI/360.0)*(cameras[cameraIndx]->GetFar()/z));
+				//glGetIntegerv(GL_VIEWPORT, viewport);
+				float z=cameras[cameraIndx]->GetFar()+depth*(cameras[cameraIndx]->GetNear()-cameras[cameraIndx]->GetFar());
+				float transX = (xrel)/float(cameras[cameraIndx]->GetWidth())*cameras[cameraIndx]->GetNear()*2.0f*tan(cameras[cameraIndx]->GetAngle()*M_PI/360.0f)*(cameras[cameraIndx]->GetFar()/z);
+				float transY =(yrel)/float(cameras[cameraIndx]->GetHeight())*cameras[cameraIndx]->GetNear()*2.0f*tan(cameras[cameraIndx]->GetAngle()*M_PI/360.0f)*(cameras[cameraIndx]->GetFar()/z);
 
 				shapeTransformation(xCameraTranslate,-transX);
 				shapeTransformation(yCameraTranslate,transY);
@@ -542,8 +618,9 @@ using namespace glm;
 			shapes[shpIndx]->Unhide();
 	}
 
-	Scene::~Scene(void)
-	{
+
+Scene::~Scene(void)
+{
 	for (Shape* shp : shapes)
 		{
 			delete shp;
@@ -561,8 +638,19 @@ using namespace glm;
 			delete tex;
 		}
 
-	delete axisMesh;
+	for(DrawBuffer* buf: buffers)
+		{
+			delete buf;
+		}
+	if(plane2D)
+		delete plane2D;
 
+}
+
+void Scene::Clear(float r, float g, float b, float a)
+{
+	glClearColor(r, g, b, a);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 	 
 	void Scene::ScaleAllDirections(int factor)
