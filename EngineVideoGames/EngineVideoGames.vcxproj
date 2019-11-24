@@ -13,13 +13,13 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{42AF4C92-9210-42BB-AFD2-30E6108E4CC4}</ProjectGuid>
     <RootNamespace>EngineVideoGames</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -76,7 +76,6 @@
   <ItemGroup>
     <ClCompile Include="bezier1D.cpp" />
     <ClCompile Include="bezier2D.cpp" />
-    <ClCompile Include="DrawBuffer.cpp" />
     <ClCompile Include="EulerAngles.cpp" />
     <ClCompile Include="IndexBuffer.cpp" />
     <ClCompile Include="kdtree.cpp" />
@@ -97,7 +96,6 @@
     <ClInclude Include="bezier1D.h" />
     <ClInclude Include="bezier2D.h" />
     <ClInclude Include="camera.h" />
-    <ClInclude Include="DrawBuffer.h" />
     <ClInclude Include="EulerAngles.h" />
     <ClInclude Include="IndexBuffer.hpp" />
     <ClInclude Include="kdtree.h" />
@@ -114,7 +112,6 @@
     <ClInclude Include="texture.h" />
     <ClInclude Include="VertexArray.hpp" />
     <ClInclude Include="VertexBuffer.hpp" />
-    <ClInclude Include="Viewport.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="EngineVideoGames.rc" />

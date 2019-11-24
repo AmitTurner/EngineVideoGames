@@ -25,13 +25,16 @@ public:
 	//vec3 findAxis2(vec4 &vec, int indx);
 	MovableGLM();
 	virtual ~MovableGLM(){}
+	void doTranslate(glm::mat4 mat, int indx);
+	void doRotate(glm::mat4 rot);
+	void resetEuler();
 	glm::mat4 makeTransScale(glm::mat4 &prevTransformations) const;
 	glm::mat4 makeTransScale() const;
 	glm::mat4 makeTrans(glm::mat4 &prevTransformations) const;
 	glm::mat4 makeTrans() const;
 	glm::mat4 GetRot() const;
 	void SetRotMatrix(glm::mat4 &mat);
-	void myRotate(float ang, glm::vec3 &vec, int indx);
+	void myRotate(float ang, const glm::vec3 &vec, int indx);
 	void myTranslate(glm::vec3 &vec, int indx);
 	void myScale(glm::vec3 &vec);
 	void globalSystemRot(float ang, glm::vec3 &vec, int indx);
@@ -39,7 +42,7 @@ public:
 	void zeroTrans();
 	void zeroRot(bool generalRot);
 	void copyTranslations(MovableGLM *mGLM);
-	void translateInSystem(const MovableGLM  &system,glm::vec3 &vec, int indx, bool toScale);
+	void translateInSystem(const MovableGLM &system,glm::vec3 &vec, int indx, bool toScale);
 	void mergeRot2Euler();
 	void printRot(bool generalRot);
 

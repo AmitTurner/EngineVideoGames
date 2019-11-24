@@ -13,13 +13,13 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{257FC222-2301-4B67-A02B-880548704235}</ProjectGuid>
     <RootNamespace>Game</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -50,7 +50,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)res/libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glew32s.lib;glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glew32s.lib;WinMM.lib;glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -79,12 +79,38 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\res\includes\imgui\imgui.cpp" />
+    <ClCompile Include="..\res\includes\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\res\includes\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\res\includes\imgui\imgui_impl_glfw_gl3.cpp" />
+    <ClCompile Include="cameraMotion.cpp" />
     <ClCompile Include="game.cpp" />
+    <ClCompile Include="IntersectTracker.cpp" />
+    <ClCompile Include="levelTheme.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="levelParser.cpp" />
+    <ClCompile Include="Menu.cpp" />
+    <ClCompile Include="snakeMoveTracker.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\res\imGui\imconfig.h" />
+    <ClInclude Include="..\res\includes\imgui\imconfig.h" />
+    <ClInclude Include="..\res\includes\imgui\imgui.h" />
+    <ClInclude Include="..\res\includes\imgui\imgui_impl_glfw_gl3.h" />
+    <ClInclude Include="..\res\includes\imgui\imgui_internal.h" />
+    <ClInclude Include="..\res\includes\imgui\stb_rect_pack.h" />
+    <ClInclude Include="..\res\includes\imgui\stb_textedit.h" />
+    <ClInclude Include="..\res\includes\imgui\stb_truetype.h" />
+    <ClInclude Include="cameraMotion.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="InputManager.h" />
+    <ClInclude Include="IntersectTracker.h" />
+    <ClInclude Include="levelParser.h" />
+    <ClInclude Include="levelTheme.h" />
+    <ClInclude Include="listNode.h" />
+    <ClInclude Include="Menu.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="snakeMoveTracker.H" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

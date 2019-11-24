@@ -6,10 +6,12 @@
 #include "bezier1D.h"
 #include "stdio.h"
 #define M_double_PI 2*M_PI
+static const vec3 xAxis(1, 0, 0);		static const vec3 yAxis(0, 1, 0);		static const vec3 zAxis(0, 0, 1);
 class Bezier2D
 {
 	int circularSubdivision; //(usualy 4) how many subdivision in circular direction
 	Bezier1D b;
+	glm::vec3 color;
 	vec3 axis;
 	bool axismode = false;
 	vec3 first;
@@ -32,9 +34,25 @@ public:
 		this->axis  = glm::normalize(this->last - this->first);
 	}
 
+	float angle_mine_rad(vec3 v1, vec3 v2) {
+		if (std::isnan(v1.x) || std::isnan(v2.x))
+			return nan;
+		v1 = normaliz(v1);
+		v2 = normaliz(v2);
+		float mult = multParams(v1, v2);
+		if (mult > 1)  mult = 1;
+		else if (mult < -1) mult = -1;
+		return glm::acos(mult);
+	}
+
+	float angle_mine_deg(vec3 v1, vec3 v2) {
+		return glm::degrees(angle_mine_rad(v1, v2));
+	}
+	static IndexedModel genBall(int resT, int resS, int circularSubdivision);
 	~Bezier2D(void);
 
 private:
+	inline void prepSegSandPushToModel(IndexedModel& model, mat4**& surfaces, int segmentTindx, float tPart, float SEGtPart, int resS);
 	glm::vec3 Bezier2D::calcWeight(int segmentT, int segmentS, float t, float s);
 
 	void dumpMat4(mat4 &a, int name) {
@@ -143,20 +161,6 @@ private:
 	}
 
 	float nan = float(std::sqrt(-1));
-	float angle_mine_rad(vec3 v1, vec3 v2) {
-		if (std::isnan(v1.x) || std::isnan(v2.x))
-			return nan;
-		v1 = normaliz(v1);
-		v2 = normaliz(v2);
-		float mult = multParams(v1, v2);
-		if		(mult > 1)  mult = 1;
-		else if (mult < -1) mult = -1;
-		return glm::acos(mult);
-	}
-
-	float angle_mine_deg(vec3 v1, vec3 v2) {
-		return glm::degrees(angle_mine_rad(v1, v2));
-	}
 
 	void rotataByAxis(vec3 Axis, vec3 rotateBy, mat4 *toRotate) {
 		float angleToRotate = angle_mine_deg(Axis, rotateBy);
@@ -196,9 +200,6 @@ private:
 	}
 
 	mat4 angleRotator;
-	vec3 xAxis = vec3(1, 0, 0);
-	vec3 yAxis = vec3(0, 1, 0);
-	vec3 zAxis = vec3(0, 0, 1);
 	void initParts(mat4 *parts) {
 		parts[0] = initSegmentPartOfCycle(circularSubdivision);
 		//rotataByAxis(xAxis, axis, &parts[0]);

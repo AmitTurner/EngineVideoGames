@@ -12,29 +12,28 @@ Shape::Shape(const Shape& shape,unsigned int mode)
 	isCopy = true;
 	this->mode = mode;
 	toRender = true;
-	texID = -1;
-	shaderID = 1;
-
+	texID = shape.texID;
+	shaderID = shape.shaderID;
 }
 
-Shape::Shape(const std::string& fileName, unsigned int mode){
+Shape::Shape(const std::string& fileName, unsigned int mode, int textureID, int shadeID){
 	mesh = new MeshConstructor(fileName);
 	isCopy = false;
 	this->mode = mode;
 	toRender = true;
-	texID = -1;
-	shaderID = 1;
+	texID = textureID;
+	shaderID = shadeID;
 
 }
 
-Shape::Shape(const IndexedModel &model, unsigned int mode){
+Shape::Shape(const IndexedModel &model, unsigned int mode, int textureID, int shadID){
 	mesh = new MeshConstructor(model);
 	//mesh->Bind();
 	this->mode = mode;
 	isCopy = false;
 	toRender = true;
-	texID = -1;
-	shaderID = 1;
+	texID = textureID;
+	shaderID = shadID;
 }
 
 Shape::Shape(const int SimpleShapeType,unsigned int mode)
@@ -45,7 +44,7 @@ Shape::Shape(const int SimpleShapeType,unsigned int mode)
 	isCopy = false;
 	toRender = true;
 	texID = -1;
-	shaderID = 1;
+	shaderID = 3;
 
 }
 
@@ -64,7 +63,7 @@ Shape::Shape(Bezier1D *curve, unsigned int xResolution,unsigned int yResolution,
 void Shape::Draw( const std::vector<Shader*> shaders, const std::vector<Texture*> textures,bool isPicking)
 {	
 	if(texID>=0)
-		textures[texID]->Bind(0);
+		textures[texID]->Bind();
 	if(isPicking)
 		shaders[0]->Bind();
 	else

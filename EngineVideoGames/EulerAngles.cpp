@@ -36,6 +36,11 @@ EulerAngles::EulerAngles(float phif, float thetaf, float psif)
 	psi = glm::rotate(psi, psif, glm::vec3(0, 0, 1));
 
 }
+void EulerAngles::copyEulerAngles(EulerAngles &copyHim) {
+	phi = copyHim.phi;
+	theta = copyHim.theta;
+	psi = copyHim.psi;
+}
 
 void EulerAngles::printAngles(int ang)
 {
@@ -163,7 +168,7 @@ void EulerAngles::alignedRot(int XorZ,float angle,int mode )
 	{
 	case zAxis1:
 		if(mode == 0)
-			phi =  glm::rotate(phi,ang,glm::vec3(0,0,1));
+			phi = glm::rotate(phi,ang,glm::vec3(0,0,1));
 		else 
 			phi = glm::rotate(glm::mat4(1),ang,glm::vec3(0,0,1)) * phi;
 		break;
@@ -181,14 +186,13 @@ void EulerAngles::alignedRot(int XorZ,float angle,int mode )
 		break;
 	case zAxis12:
 		if(mode == 0)
-		{
-			
-				phi =  glm::rotate(phi,ang,glm::vec3(0,0,1));
-				psi =  glm::rotate(psi,-ang,glm::vec3(0,0,1));
+		{			
+				phi = glm::rotate(phi, ang,glm::vec3(0,0,1));
+				psi = glm::rotate(psi,-ang,glm::vec3(0,0,1));
 		}
 		else
 		{
-			phi =glm::rotate(glm::mat4(1),ang,glm::vec3(0,0,1)) * phi;
+			phi = glm::rotate(glm::mat4(1), ang,glm::vec3(0,0,1)) * phi;
 			psi = glm::rotate(glm::mat4(1),-ang,glm::vec3(0,0,1)) * psi;
 		}
 		break;

@@ -18,8 +18,8 @@ public:
 	void SetUniform4i(const std::string& name, int vi0,int vi1,int vi2,int vi3);
 	void SetUniform1f(const std::string& name, float value);
 	void SetUniform4f(const std::string& name, float v0, float v1, float f2, float f3 );
-	void SetUniformMat4f(const std::string& name,const glm::mat4&  matrix);
-	void SetUniformMat2x4f(const std::string& name, const glm::mat2x4&  matrix);
+	void SetUniformMat4f(const std::string& name,const glm::mat4& matrix);
+	void SetUniformMat2x4f(const std::string& name, const glm::mat2x4& matrix);
 	void SetUniformMat4fv(const std::string& name,const glm::mat4 *matrix,const int length);
 	void SetUniform4fv(const std::string& name, float value[20]);
 
@@ -33,7 +33,8 @@ private:
 		NORMAL_VB,
 		WEIGHT_VB,
 		TEXCOORD_VB,
-		INDEX_VB,	
+		INDEX_VB,
+		
 		JOINT_INDEX_VB
 	};
 	static const unsigned int NUM_SHADERS = 2;

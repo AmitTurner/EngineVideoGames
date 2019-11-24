@@ -2,34 +2,26 @@
 #include "shader.h"
 #include "shape.h"
 #include "camera.h"
-#include "Viewport.h"
-#include "DrawBuffer.h"
 #include "VertexArray.hpp"
 #include <vector>
 
-enum buffers
-	{
-		COLOR,
-		DEPTH,
-		STENCIL,
-		BACK,
-		FRONT,
-		ACCUM,
-		NONE,
-	};
 
 class Scene : public MovableGLM
 {
 
 public:
 	enum axis{xAxis,yAxis,zAxis};
+
 	enum transformations{xLocalTranslate,yLocalTranslate,zLocalTranslate,xGlobalTranslate,yGlobalTranslate,zGlobalTranslate,
 		xLocalRotate,yLocalRotate,zLocalRotate,xGlobalRotate,yGlobalRotate,zGlobalRotate,xScale,yScale,zScale,xCameraTranslate,yCameraTranslate,zCameraTranslate};
+	enum transformations2 {
+		LocalTranslate, GlobalTranslate, Scale
+	};
+
 	enum modes{POINTS,LINES,LINE_LOOP,LINE_STRIP,TRIANGLES,TRIANGLE_STRIP,TRIANGLE_FAN,QUADS};
-	enum shapes
+	enum Shapes
 	{
 		Axis,
-		Plane,
 		Cube,
 		Octahedron,
 		Tethrahedron,
@@ -38,34 +30,28 @@ public:
 		LineCopy,
 		MeshCopy,
 	};
-	
-	
 	Scene();
-	Scene(glm::vec3 position,float angle,float near, float far,Viewport &vp);
-	
-	void addShapeFromFile(const std::string& fileName,int parent,unsigned int mode);
+	Scene(glm::vec3 position,float angle,float hwRelation,float near, float far);
+
+	void addShapeFromFile(const std::string& fileName,int parent,unsigned int mode, int textureID, int shaderID);
 	virtual void addShape(int type,int parent,unsigned int mode);
 	void addShapeCopy(int indx,int parent,unsigned int mode);
 	
 	void addShader(const std::string& fileName);
-	void AddTexture(const std::string& textureFileName, bool for2D);
-	void AddTexture(int width,int height,int mode);
-	void AddCamera(const glm::vec3& pos , float fov, float zNear, float zFar,Viewport vp);
-	void AddBuffer(int texIndx,int cameraIndx,int mode);
+	void AddTexture(const std::string& textureFileName);
 	void ZeroShapesTrans();
 
-	//virtual void Update( glm::mat4 MVP ,glm::mat4 *jointTransforms,const int length,const int  shaderIndx);//
+	//virtual void Update( glm::mat4 MVP ,glm::mat4 *jointTransforms,const int length,const int shaderIndx);//
+	void shapeTransformation(int pickedShape, int type, vec3 amt);
 
-	virtual void UpdateLinear(const glm::mat4 &lastMVP, const glm::mat4 &MVP, const glm::mat4 &nextMVP, const glm::mat4 &Normal, const int  shaderIndx) = 0;
-	virtual void UpdateQuaternion(const glm::mat2x4 &lastMVP, const glm::mat2x4 &MVP, const glm::mat2x4 &nextMVP, const glm::mat4 &Normal, const int  shaderIndx) = 0;
-	void getNormalAndMVP(mat4 &Normal, mat4 &MVP, mat4 *Normal1, mat4 *MVP1, int i);
-	virtual void Update(const glm::mat4 &MVP,const glm::mat4 &Normal,const int  shaderIndx) = 0;
-	virtual void Update2D(glm::mat4& mat, int time, const int shaderIndx);
+	virtual void Update(const glm::vec4 &camdir, glm::mat4 &MVP, const glm::mat4 &Normal, const int shaderIndx) = 0;
+	virtual void UpdateLinear(const glm::mat4 &lastMVP, const glm::mat4 &MVP, const glm::mat4 &nextMVP, const glm::mat4 &Normal, const int shaderIndx) = 0;
 	virtual void WhenTranslate(){};
 	virtual void WhenRotate(){};
 	virtual void Motion(){};
-	virtual void Draw(int shaderIndx,int cameraIndx,int buffer,bool toClear,bool debugMode);
-	virtual void Draw2D(int shaderIndx,int cameraIndx,int buffer,bool toClear,bool debugMode);
+	virtual void Draw(int shaderIndx,int cameraIndx,bool debugMode);
+	mat4 Scene::getChainedTrans(int i);
+	void getNormalAndMVP(mat4 &Normal, mat4 &MVP, mat4 *Normal1, mat4 *MVP1, int i);
 
 	glm::mat4 GetViewProjection(int indx) const; 
 	glm::mat4 GetShapeTransformation() const;
@@ -86,6 +72,8 @@ public:
 	inline float GetAngle(int cameraIndx) {return cameras[cameraIndx]->GetAngle();}
 	inline void Activate() {isActive = true;}
 	inline void Deactivate() {isActive = false;}
+	inline void PauseUnpause() { isActive = !isActive; }//will change motion
+	inline void switchMouseEnablePicking() { enableMousePicking = !enableMousePicking; }//will change motion
 	void HideShape(int shpIndx);
 	//inline void SetMousePosition(double xpos, double ypos){xold =xpos; yold=ypos;}
 	void updatePosition(float xpos, float ypos);
@@ -97,35 +85,35 @@ public:
 	glm::vec3 GetTipPositionInSystem(int indx);
 	glm::vec3 GetVectorInSystem(int indx,glm::vec3 vec);
 	//void Scene::OpositeDirectionRot(glm::vec3 vec,float angle);
+	std::vector<Shape*> shapes;
+	std::vector<Texture*> textures;
 	void OpositeDirectionRot(glm::vec3 vec,float angle);
 	inline void PrintShapeRotations(int indx){shapes[indx]->printRot(true);}
 	inline void SetShapeTex(int shpIndx,int texIndx){shapes[shpIndx]->SetTexture(texIndx);} 
 	inline void SetShapeShader(int shpIndx,int shdrIndx){shapes[shpIndx]->SetShader(shdrIndx);} 
 	
 private:	
-	
+
 	std::vector<Camera*> cameras; //light will have the properties of camera
-	std::vector<DrawBuffer*> buffers;
-	std::vector<int> texIndices;
+	
+	Shape *axisMesh;
 	int verticesSize;
 	int indicesSize;
 
 	float depth;
 	int xold, yold,xrel, yrel;
 	int cameraIndx;
-	void Clear(float r, float g, float b, float a);
 
 protected:
-	Shape *plane2D;
-	std::vector<Shape*> shapes;
+	
 	std::vector<Shader*> shaders;
 	std::vector<int> chainParents;
-	std::vector<Texture*> textures;
-	
+
 	int pickedShape;
 	int direction;
 	static const int scaleFactor =2;
 	bool isActive;
+	bool enableMousePicking = false;
 	void ScaleAllDirections(int factor);
 };
 

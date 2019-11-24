@@ -19,11 +19,11 @@ private:
 public:
 	unsigned int mode;
 
-	Shape(const IndexedModel& model, unsigned int mode);
+	Shape(const IndexedModel& model, unsigned int mode, int textureID, int shaderID);
 
-	Shape(const Shape& shape,unsigned int mode);
+	Shape(const Shape& shape, unsigned int mode);
 
-	Shape(const std::string& fileName,unsigned int mode);
+	Shape(const std::string& fileName,unsigned int mode, int textureID, int shaderID);
 	
 	Shape(const int SimpleShapeType,unsigned int mode);
 
@@ -44,8 +44,6 @@ public:
 	inline void SetShader(int id){ shaderID = id;}
 
 	inline int GetShader(){return shaderID;}
-
-	inline int GetTexture(){return texID;}
 
 	virtual ~Shape(void);
 };

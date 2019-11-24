@@ -14,9 +14,6 @@ MeshConstructor::MeshConstructor(const int type)
 	case Axis:	
 		InitLine(AxisGenerator());
 		break;
-	case Plane:
-		InitMesh(PlaneTriangles());
-		break;
 	case Cube:
 		 InitMesh(CubeTriangles());
 		 break;
@@ -34,7 +31,11 @@ MeshConstructor::MeshConstructor(const int type)
 
 MeshConstructor::MeshConstructor(const std::string& fileName)
 {
-	InitMesh(OBJModel(fileName).ToIndexedModel());
+	IndexedModel im = OBJModel(fileName).ToIndexedModel();
+	if (im.positions.size() > 0)
+		InitMesh(im);
+	else
+		printf("failed to read file\n");
 }
 
 const int circularSubdivisions = 4;
@@ -95,13 +96,18 @@ void MeshConstructor::InitLine(IndexedModel &model){
 	
 }
 
-std::vector<glm::vec3> MeshConstructor::getlastInitMeshPositions() {
+std::vector<glm::vec3>& MeshConstructor::getlastInitMeshPositions() {
 	//printf("%d meakss!\n", lastInitMeshPositions.size());
-	return lastInitMeshPositions;
+	return lastInitIndexedModel.positions;
+}
+
+IndexedModel& MeshConstructor::getlastIndexedModel() {
+	//printf("%d meakss!\n", lastInitMeshPositions.size());
+	return lastInitIndexedModel;
 }
 
 void MeshConstructor::InitMesh(const IndexedModel &model){
-	lastInitMeshPositions = model.positions;
+	lastInitIndexedModel = model;
 
 	int verticesNum = model.positions.size();
 	indicesNum = model.indices.size();

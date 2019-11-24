@@ -28,9 +28,9 @@ class Node
 	 std::vector<float> boundbox;
 	 Node* left ;// = std::unique_ptr<Node>( new Node(3) );
 	 Node* right; //( new Node(3));
-	vecType data; 
+	 vecType data; 
 	 
-     //default constructor
+   //default constructor
 	 Node(int _n);
 	 
 	 //copy constructor
@@ -39,7 +39,7 @@ class Node
 	 //default deconstructor
 	 ~Node();
 	 
-	     
+	   
 
 };
 
@@ -47,28 +47,33 @@ class Kdtree
 {
 
  public:
-	//typedef float                numType;
+	//typedef float        numType;
 	typedef Node::vecType vecType;
 		
 	//default constructor
 	Kdtree();
+	Kdtree(Node *ousider);
 
 	//default deconstructor
 	~Kdtree();
 	
+	static void kill(Node *head);
+
 	/* 
-	*   Return the tree root node
+	*  Return the tree root node
 	*/
-	Node* getRoot() const { return root; };
+	Node* getRoot() const { return Kdtree::root; };
+	void setRoot(Node * newRoot) { Kdtree::root = newRoot; };
+
 	/*
 	* support function for printTree
 	*/
 	void print_data(vecType pt);
 		
-	/*  prints the tree
-	*   and really works best for small trees 
-	*   as a test of tree construction.
-	*/  
+	/* prints the tree
+	*  and really works best for small trees 
+	*  as a test of tree construction.
+	*/ 
 	void printTree( Node* head );
 	
 	//function for finding the median of a list of points

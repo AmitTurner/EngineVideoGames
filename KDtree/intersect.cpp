@@ -1,11 +1,15 @@
 #include "intersect.h"
-#include <stdlib.h>
-#include <list>
-
 
 //default constructor
-intersect::intersect(std::vector<glm::vec3> shape) {
+intersect::intersect(std::vector<glm::vec3> &shape) {
 	kd.makeTree(shape);
+	boundbox = kd.getRoot()->boundbox;
+	boundboxvec = bound_vec_to_boundbox(boundbox);
+}
+
+//copy constructor
+intersect::intersect(Node *Node) {
+	kd.setRoot(Node);
 	boundbox = kd.getRoot()->boundbox;
 	boundboxvec = bound_vec_to_boundbox(boundbox);
 }
@@ -19,38 +23,52 @@ glm::mat4 *currentTransMe;
 glm::mat4 *currentTransOther;
 
 /*
-*   Return the tree root node
+*  Return the tree root node
 */
 std::vector<IndexedModel> coloredBoxesOutput;
-std::vector<IndexedModel> intersect::isIntersect(glm::mat4 *transMe, glm::mat4 *transOther, intersect other) {
-
+int maxDepA;
+int maxDepB;
+int maxDep;
+std::vector<IndexedModel> intersect::isIntersect(glm::mat4 *transMe, glm::mat4 *transOther, intersect &other) {
 	std::vector<glm::vec3> boundboxvec1 = bound_vec_to_boundbox(boundbox);
 	std::vector<glm::vec3> boundboxvec2 = bound_vec_to_boundbox(other.boundbox);
 
-	currentTransMe    = transMe;
+	currentTransMe  = transMe;
 	currentTransOther = transOther;
 
 	int res = isThereSeparatingPanel(boundboxvec1, boundboxvec2);
 	//printf("res %d\n", res);
+
 	if (res > 0)
 		return std::vector<IndexedModel>();
 
 	std::vector<std::vector<glm::vec3>> intersect_boxes;
 	coloredBoxesOutput.clear();
-	rec_is_intersect(kd.getRoot(), other.kd.getRoot(), 0, &intersect_boxes);
+	maxDepA = kd.max_depth;
+	maxDepB = other.kd.max_depth;
+	maxDep = max(maxDepA, maxDepB);
+	if (maxDepA > maxDepB) {
+		maxDepA = other.kd.max_depth;
+		maxDepB = kd.max_depth;
+		currentTransMe = transOther;
+		currentTransOther = transMe;
+		rec_is_intersect(other.kd.getRoot(), kd.getRoot(), 0, &intersect_boxes);
+	}
+	else
+		rec_is_intersect(kd.getRoot(), other.kd.getRoot(), 0, &intersect_boxes);
 	//intersect_boxes.pop_back(); intersect_boxes.pop_back();
 	return coloredBoxesOutput;
 }
 
-int intersect::isThereSeparatingPanel(std::vector<glm::vec3> box1, std::vector<glm::vec3> box2) {
+int intersect::isThereSeparatingPanel(std::vector<glm::vec3> &box1, std::vector<glm::vec3> &box2) {
 	glm::vec3 frontleftdown = v4to3(*currentTransMe * v3to4(box1[0]));
-	glm::vec3 backleftdown  = v4to3(*currentTransMe * v3to4(box1[1]));
+	glm::vec3 backleftdown = v4to3(*currentTransMe * v3to4(box1[1]));
 	glm::vec3 backrightdown = v4to3(*currentTransMe * v3to4(box1[2]));
-	glm::vec3 backleftup    = v4to3(*currentTransMe * v3to4(box1[5]));
-	glm::vec3 frontupright  = v4to3(*currentTransMe * v3to4(box1[7]));
+	glm::vec3 backleftup  = v4to3(*currentTransMe * v3to4(box1[5]));
+	glm::vec3 frontupright = v4to3(*currentTransMe * v3to4(box1[7]));
 	glm::vec3 PA = (backleftdown + frontupright) / 2.0f;//coordinate position of the center of A
 	glm::vec3 Ax = backrightdown - backleftdown;//unit vector representing the x - axis of A
-	glm::vec3 Ay = backleftup    - backleftdown;// unit vector representing the y - axis of A
+	glm::vec3 Ay = backleftup  - backleftdown;// unit vector representing the y - axis of A
 	glm::vec3 Az = frontleftdown - backleftdown;// unit vector representing the z - axis of A
 	float WA = glm::length(Ax);// half width of A(corresponds with the local x - axis of A)
 	Ax = Ax / WA;//normalize
@@ -65,7 +83,7 @@ int intersect::isThereSeparatingPanel(std::vector<glm::vec3> box1, std::vector<g
 	frontleftdown= v4to3(*currentTransOther * v3to4(box2[0]));
 	backleftdown = v4to3(*currentTransOther * v3to4(box2[1]));
 	backrightdown= v4to3(*currentTransOther * v3to4(box2[2]));
-	backleftup   = v4to3(*currentTransOther * v3to4(box2[5]));
+	backleftup  = v4to3(*currentTransOther * v3to4(box2[5]));
 	frontupright = v4to3(*currentTransOther * v3to4(box2[7]));
 	glm::vec3 PB = (backleftdown + frontupright) / 2.0f;//coordinate position of the center of B
 	glm::vec3 Bx = backrightdown - backleftdown;//unit vector representing the x - axis of B
@@ -81,6 +99,7 @@ int intersect::isThereSeparatingPanel(std::vector<glm::vec3> box1, std::vector<g
 	Bz = Bz / DB;
 	DB /= 2.0f;
 	glm::vec3 T = PB - PA;
+
 	float Rxx = glm::dot(Ax, Bx);
 	float Rxy = glm::dot(Ax, By);
 	float Rxz = glm::dot(Ax, Bz);
@@ -123,7 +142,7 @@ int intersect::isThereSeparatingPanel(std::vector<glm::vec3> box1, std::vector<g
 		return 6;
 	// L = Ax x Bx
 	cond = abs(glm::dot(T, Az)*Ryx - glm::dot(T, Ay)*Rzx);
-	res  = abs(HA*Rzx) + abs(DA*Ryx) + abs(HB*Rxz) + abs(DB*Rxy);
+	res = abs(HA*Rzx) + abs(DA*Ryx) + abs(HB*Rxz) + abs(DB*Rxy);
 	if (cond > res)
 		return 7;
 	// L = Ax x By
@@ -169,18 +188,7 @@ int intersect::isThereSeparatingPanel(std::vector<glm::vec3> box1, std::vector<g
 	return 0;
 }
 
-//std::vector<glm::vec3> floats_to_vec(std::vector<float> boundbox) {
-//	std::vector<glm::vec3> vec;
-//	vec.push_back(vec3(boundbox[0], 0, 0));
-//	vec.push_back(vec3(boundbox[1], 0, 0));
-//	vec.push_back(vec3(0, boundbox[2], 0));
-//	vec.push_back(vec3(0, boundbox[3], 0));
-//	vec.push_back(vec3(0, 0, boundbox[4]));
-//	vec.push_back(vec3(0, 0, boundbox[5]));
-//	return vec;
-//}
-
-std::vector<glm::vec3> intersect::bound_vec_to_boundbox(std::vector<float> boundbox) {
+inline std::vector<glm::vec3> intersect::bound_vec_to_boundbox(std::vector<float> &boundbox) {
 	std::vector<glm::vec3> vec;
 	vec.push_back(vec3(boundbox[0], boundbox[2], boundbox[5]));
 	vec.push_back(vec3(boundbox[0], boundbox[2], boundbox[4]));
@@ -235,22 +243,32 @@ int intersect::intersectWithOther(Node * nextother, int axis, std::vector<float>
 void intersect::nodesIntersectValitate(Node * next, int axis, Node * other,
 	int depth, std::vector<std::vector<glm::vec3>> * output, std::vector<glm::vec3> &boxvec, std::vector<glm::vec3> &boxvec2)
 {
-	bool intersect_with = 0;// 1;
+	bool intersect_with = 0;
 	if (next) {
 		if (next->boundbox[axis * 2] == next->boundbox[axis * 2 + 1])
 			intersect_with = 1;//we do not want to keep recursion on a plane	
 		else {
 			int res1 = intersectWithOther(other->left, axis, next->boundbox);
-			if (res1 == 0)
-				rec_is_intersect(next, other->left, depth + 1, output);
+			if (res1 == 0) {
+				if(depth >= maxDepB)
+					rec_is_intersect(next, other, depth + 1, output);
+				else
+					rec_is_intersect(next, other->left, depth + 1, output);
+			}
 			int res2 = intersectWithOther(other->right, axis, next->boundbox);
-			if (res2 == 0)
-				rec_is_intersect(next, other->right, depth + 1, output);
+			if (res2 == 0) {
+				if (depth >= maxDepB)
+					rec_is_intersect(next, other, depth + 1, output);
+				else
+					rec_is_intersect(next, other->right, depth + 1, output);
+			}
 			intersect_with = (res1 & res2) > 0;
 		}
 	}
-	if (intersect_with && ((unsigned)depth == kd.max_depth-1)) {//none of the children are intersecting - add perants
-		insert_box(output, boxvec,  currentTransMe,	   glm::vec3(0.2, 0.2, 1));
+
+	//none of the children are intersecting - so we will try to add perants
+	if (intersect_with && ((signed)depth >= maxDep-2)) {
+		insert_box(output, boxvec, currentTransMe,	  glm::vec3(0.2, 0.2, 1));
 		insert_box(output, boxvec2, currentTransOther, glm::vec3(1, 0.2, 0.2));
 	}
 }
@@ -258,17 +276,23 @@ void intersect::nodesIntersectValitate(Node * next, int axis, Node * other,
 //in iteration level the boxes are intersecting we will assure it happen in the children too
 void intersect::rec_is_intersect(Node *current, Node *other,
 			int depth, std::vector<std::vector<glm::vec3>> *output) {
-	int axis = depth % 3;
-	std::vector<glm::vec3> boxvec  = bound_vec_to_boundbox(current->boundbox);
-	std::vector<glm::vec3> boxvec2 = bound_vec_to_boundbox(  other->boundbox);
-	std::vector<float> boundingboxcopy      = current->boundbox;
-	std::vector<float> boundingboxcopyother =   other->boundbox;
+	if ((depth > maxDep) | (output->size() > 0))
+		return;//optimize
 
-	nodesIntersectValitate(current->left,  axis, other, depth, output, boxvec, boxvec2);
-	nodesIntersectValitate(current->right, axis, other, depth, output, boxvec, boxvec2);
+	int axis = depth % 3;
+	std::vector<glm::vec3> boxvec = bound_vec_to_boundbox(current->boundbox);
+	std::vector<glm::vec3> boxvec2 = bound_vec_to_boundbox( other->boundbox);
+	
+	if (depth >= maxDepA) {
+		nodesIntersectValitate(current, axis, other, depth, output, boxvec, boxvec2);
+	}
+	else {
+		nodesIntersectValitate(current->right, axis, other, depth, output, boxvec, boxvec2);
+		nodesIntersectValitate(current->left, axis, other, depth, output, boxvec, boxvec2);
+	}
 }
 
-IndexedModel intersect::boxVertexesToIndexModel (std::vector<glm::vec3> intesect_box, glm::vec3 color){	
+IndexedModel intersect::boxVertexesToIndexModel (std::vector<glm::vec3> &intesect_box, glm::vec3 color){	
 	Vertex vertices[] =
 	{
 		Vertex(intesect_box[1], glm::vec2(1, 0), glm::vec3(0, 0, -1), color),
@@ -303,23 +327,23 @@ IndexedModel intersect::boxVertexesToIndexModel (std::vector<glm::vec3> intesect
 	};
 	
 	unsigned int indices[] = {0, 1, 2,
-							  0, 2, 3,
+							 0, 2, 3,
 
-							  6, 5, 4,
-							  7, 6, 4,
+							 6, 5, 4,
+							 7, 6, 4,
 
-							  10, 9, 8,
-							  11, 10, 8,
+							 10, 9, 8,
+							 11, 10, 8,
 
-							  12, 13, 14,
-							  12, 14, 15,
+							 12, 13, 14,
+							 12, 14, 15,
 
-							  16, 17, 18,
-							  16, 18, 19,
+							 16, 17, 18,
+							 16, 18, 19,
 
-							  22, 21, 20,
-							  23, 22, 20
-	                          };
+							 22, 21, 20,
+							 23, 22, 20
+	             };
 
 	IndexedModel model;
 	
@@ -331,12 +355,12 @@ IndexedModel intersect::boxVertexesToIndexModel (std::vector<glm::vec3> intesect
 		model.texCoords.push_back(*vertices[i].GetTexCoord());
 	}
 	for(unsigned int i = 0; i < 36; i++)
-        model.indices.push_back(indices[i]);
+    model.indices.push_back(indices[i]);
 	
 	return model;
 }
 
-std::vector<IndexedModel> intersect::makeBoxesIndexModels(std::vector<std::vector<glm::vec3>> intersect_boxes) {
+std::vector<IndexedModel> intersect::makeBoxesIndexModels(std::vector<std::vector<glm::vec3>> &intersect_boxes) {
 	std::vector<IndexedModel> models;
 	for (std::vector<glm::vec3> intesect_box : intersect_boxes)
 		models.push_back(boxVertexesToIndexModel(intesect_box, glm::vec3(0, 0, 0)));
